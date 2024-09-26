@@ -1,0 +1,29 @@
+{
+  "name": "palword",
+  "version": "1.0.0",
+  "main": "expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@react-navigation/native": "^6.1.18",
+    "@react-navigation/stack": "^6.4.1",
+    "axios": "^1.7.7",
+    "axis": "^1.0.0",
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "expo": "~51.0.28",
+    "expo-status-bar": "~1.12.1",
+    "express": "^4.21.0",
+    "mysqli": "^3.1.4",
+    "react": "18.2.0",
+    "react-native": "0.74.5"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0"
+  },
+  "private": true
+}
