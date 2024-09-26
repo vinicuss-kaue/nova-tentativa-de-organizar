@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, Image, TouchableOpacity, Modal, Pressable, ImageBackground } from 'react-native';
+import { View, Text, Button, StyleSheet, Image, TouchableOpacity, Modal, Pressable, ImageBackground, TextInput } from 'react-native';
 import axios from 'axios';
 
 const backgroundImage = require('./assets/pokemon.webp');
 
 const GameScreen = ({ route, navigation }) => {
-  const { playerName } = route.params;
   const [pokemon, setPokemon] = useState(null);
   const [options, setOptions] = useState([]);
   const [correctAnswer, setCorrectAnswer] = useState('');
@@ -17,29 +16,24 @@ const GameScreen = ({ route, navigation }) => {
   const [modalMessage, setModalMessage] = useState('');
   const [modalType, setModalType] = useState('');
   const [gameOver, setGameOver] = useState(false);
+  const [playerName, setPlayerName] = useState(route.params.playerName || ""); // Recebe o nome do jogador ou usa um valor padrão
 
   useEffect(() => {
     if (questionCount < 10) {
       fetchPokemon();
     } else {
-      saveScore();
-      setGameOver(true);
-      navigation.navigate('Result', {
-        score: {
-          correct: correctCount,
-          incorrect: incorrectCount,
-        },
-        playerName,
-      });
+      handleGameOver();
     }
   }, [questionCount]);
 
   const fetchPokemon = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get('http://localhost:3000/pokemon/random');
-      setPokemon({ name: data.name, image: data.sprites.front_default });
-      generateOptions(data.name);
+      const randomId = Math.floor(Math.random() * 898) + 1;
+      const { data } = await axios.get(`https://pokeapi.co/api/v2/pokemon/${randomId}`);
+      const name = data.name;
+      setPokemon({ name, image: data.sprites.front_default });
+      generateOptions(name);
     } catch (error) {
       console.error(error);
       setLoading(false);
@@ -56,7 +50,7 @@ const GameScreen = ({ route, navigation }) => {
     }
 
     const fetchPokemonName = async (id) => {
-      const { data } = await axios.get(`http://localhost:3000/pokemon/${id}`);
+      const { data } = await axios.get(`https://pokeapi.co/api/v2/pokemon/${id}`);
       return data.name;
     };
 
@@ -68,18 +62,6 @@ const GameScreen = ({ route, navigation }) => {
     setOptions(shuffle(names));
     setCorrectAnswer(correct);
     setLoading(false);
-  };
-
-  const saveScore = async () => {
-    try {
-      await axios.post('http://localhost:3000/scores', {
-        playerName,
-        correct: correctCount,
-        incorrect: incorrectCount,
-      });
-    } catch (error) {
-      console.error('Erro ao salvar pontuação:', error);
-    }
   };
 
   const shuffle = (array) => {
@@ -112,13 +94,30 @@ const GameScreen = ({ route, navigation }) => {
       setQuestionCount(prev => prev + 1);
     } else {
       setGameOver(true);
+      handleGameOver(); // Chama handleGameOver ao final do jogo
+    }
+  };
+
+  const handleGameOver = async () => {
+    try {
+      const response = await axios.post('http://<SEU_IP_LOCAL>:3000/register', {
+        name: playerName,
+        score: correctCount,
+      });
+
+      if (response.status === 201) {
+        console.log('Jogador registrado com sucesso:', response.data);
+      }
+
       navigation.navigate('Result', {
         score: {
           correct: correctCount,
           incorrect: incorrectCount,
         },
-        playerName,
       });
+    } catch (error) {
+      console.error('Erro ao registrar jogador:', error);
+      alert('Erro ao registrar jogador. Tente novamente.');
     }
   };
 
@@ -134,6 +133,11 @@ const GameScreen = ({ route, navigation }) => {
     fetchPokemon();
   };
 
+  const navigateToHomeAndReset = () => {
+    resetGame();
+    navigation.navigate('Home');
+  };
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -145,6 +149,12 @@ const GameScreen = ({ route, navigation }) => {
   return (
     <ImageBackground source={backgroundImage} style={styles.backgroundImage}>
       <View style={styles.container}>
+        <TextInput
+          style={styles.input}
+          placeholder="Digite seu nome"
+          value={playerName}
+          onChangeText={setPlayerName}
+        />
         {pokemon && !gameOver && (
           <>
             <Image source={{ uri: pokemon.image }} style={styles.pokemonImage} />
@@ -168,7 +178,7 @@ const GameScreen = ({ route, navigation }) => {
           <View style={styles.buttonsContainer}>
             <Button
               title="Voltar para Início"
-              onPress={() => navigation.navigate('Home')}
+              onPress={navigateToHomeAndReset}
               color="#FF6347"
             />
             <Button
@@ -236,12 +246,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
   },
-  scoreContainer: {
-    marginTop: 20,
-  },
-  scoreText: {
+  loadingText: {
     fontSize: 18,
     color: '#fff',
+  },
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    padding: 20,
   },
   modalContainer: {
     flex: 1,
@@ -256,41 +269,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   success: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#4CAF50',
   },
   error: {
-    backgroundColor: '#dc3545',
+    backgroundColor: '#F44336',
   },
   modalTitle: {
     fontSize: 24,
+    fontWeight: 'bold',
     color: '#fff',
     marginBottom: 10,
   },
   modalMessage: {
     fontSize: 18,
     color: '#fff',
-    textAlign: 'center',
+    marginBottom: 20,
   },
   modalButton: {
-    marginTop: 20,
-    backgroundColor: '#007bff',
+    backgroundColor: '#fff',
     padding: 10,
     borderRadius: 5,
   },
   modalButtonText: {
-    color: '#fff',
+    color: '#000',
     fontSize: 18,
   },
-  loadingText: {
-    fontSize: 24,
+  scoreContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  scoreText: {
+    fontSize: 18,
     color: '#fff',
   },
-  buttonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  input: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginBottom: 20,
+    paddingHorizontal: 10,
     width: '100%',
-    paddingHorizontal: 20,
-    marginTop: 20,
+    borderRadius: 5,
+    backgroundColor: '#fff',
   },
 });
 

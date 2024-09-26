@@ -1,10 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, Button, TextInput, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, Button, StyleSheet, TextInput, ImageBackground } from 'react-native';
 
-const backgroundImage = require('./assets/images.jpg');
+// Importar a imagem local
+const backgroundImage = require('./assets/images.jpg'); // Caminho para a imagem de fundo
 
 const HomeScreen = ({ navigation }) => {
   const [playerName, setPlayerName] = useState('');
+
+  const handleStartGame = () => {
+    if (playerName.trim()) {
+      navigation.navigate('Game', { playerName });
+    } else {
+      alert('Por favor, insira seu nome!');
+    }
+  };
 
   return (
     <ImageBackground source={backgroundImage} style={styles.backgroundImage}>
@@ -13,12 +22,13 @@ const HomeScreen = ({ navigation }) => {
         <TextInput
           style={styles.input}
           placeholder="Digite seu nome"
+          placeholderTextColor="#fff"
           value={playerName}
           onChangeText={setPlayerName}
         />
         <Button
           title="Iniciar Jogo"
-          onPress={() => navigation.navigate('Game', { playerName })}
+          onPress={handleStartGame}
           color="#FF6347"
         />
       </View>
@@ -42,17 +52,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     marginBottom: 20,
-    color: '#000',
+    color: '#000', // Ajusta a cor do texto para garantir visibilidade no fundo
     fontWeight: 'bold',
     textAlign: 'center',
   },
   input: {
     height: 40,
-    borderColor: '#ccc',
+    borderColor: '#fff',
     borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
     marginBottom: 20,
     width: '80%',
-    paddingHorizontal: 10,
+    color: '#fff', // Cor do texto
   },
 });
 
