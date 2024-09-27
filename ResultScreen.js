@@ -1,40 +1,49 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, Button, StyleSheet, ImageBackground, ScrollView } from 'react-native';
 import axios from 'axios';
 
 const backgroundImage = require('./assets/download.jpg');
 
 const ResultScreen = ({ route, navigation }) => {
-  const { score, playerName } = route.params;
+  const { correct, incorrect, playerName } = route.params;
   const [ranking, setRanking] = useState([]);
 
   const fetchRanking = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/ranking');
-      setRanking(response.data);
+      const response = await axios.get('http://192.168.1.106:3000/pontuacoes');
+      // Ordenar o ranking em ordem decrescente com base nos acertos
+      const sortedRanking = response.data.sort((a, b) => b.acertos - a.acertos);
+      setRanking(sortedRanking);
     } catch (error) {
-      console.error('Error fetching ranking:', error);
+      console.error('Erro ao buscar ranking:', error);
     }
   };
 
   useEffect(() => {
     fetchRanking();
   }, []);
-
   return (
     <ImageBackground source={backgroundImage} style={styles.backgroundImage} resizeMode="cover">
       <View style={styles.container}>
         <Text style={styles.title}>Resumo do Jogo</Text>
         <View style={styles.resultsContainer}>
-          <Text style={styles.resultText}>Acertos: {score.correct}</Text>
-          <Text style={styles.resultText}>Erros: {score.incorrect}</Text>
+          <Text style={styles.resultText}>Acertos: {correct}</Text>
+          <Text style={styles.resultText}>Erros: {incorrect}</Text>
         </View>
+        
         <Text style={styles.title}>Ranking dos Jogadores</Text>
-        {ranking.map((entry, index) => (
-          <Text key={index} style={styles.resultText}>{`${index + 1}. ${entry.playerName}: ${entry.correct} acertos`}</Text>
-        ))}
-        <Button title="Voltar à Tela Inicial" onPress={() => navigation.navigate('Home')} color="#FF6347" />
-        <Button title="Jogar Novamente" onPress={() => navigation.navigate('Game', { playerName })} color="#1E90FF" />
+        <ScrollView style={styles.scrollContainer}>
+          {ranking.map((entry, index) => (
+            <Text key={index} style={styles.resultText}>
+              {`${index + 1}. ${entry.playerName}: ${entry.acertos} acertos`}
+            </Text>
+          ))}
+        </ScrollView>
+        
+        <View style={styles.buttonContainer}>
+          <Button title="Voltar à Tela Inicial" onPress={() => navigation.navigate('Home')} color="#FF6347" />
+          <Button title="Jogar Novamente" onPress={() => navigation.navigate('Game', { playerName })} color="#1E90FF" />
+        </View>
       </View>
     </ImageBackground>
   );
@@ -74,6 +83,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 10,
     textAlign: 'center',
+  },
+  scrollContainer: {
+    width: '100%',
+  },
+  buttonContainer: {
+    marginTop: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
   },
 });
 

@@ -1,23 +1,25 @@
 const express = require('express');
 const mysql = require('mysql');
 const cors = require('cors');
+const bodyParser = require('body-parser');
 
 const app = express();
 const PORT = 3000;
 
-// Configuração do CORS
+// Middleware
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
 
-// Conexão com o banco de dados MySQL
+// Configuração do banco de dados
 const db = mysql.createConnection({
   host: 'localhost',
-  user: 'seu_usuario',
-  password: 'sua_senha',
-  database: 'seu_banco_de_dados',
+  user: 'root', // Substitua pelo seu usuário do MySQL
+  password: '', // Substitua pela sua senha do MySQL
+  database: 'jogo_pokemon'
 });
 
-db.connect((err) => {
+// Conectar ao banco de dados
+db.connect(err => {
   if (err) {
     console.error('Erro ao conectar ao banco de dados:', err);
     return;
@@ -25,19 +27,35 @@ db.connect((err) => {
   console.log('Conectado ao banco de dados MySQL.');
 });
 
-// Rota para registrar o jogador
-app.post('/register', (req, res) => {
-  const { name, score } = req.body;
-  const query = 'INSERT INTO ranking (name, score) VALUES (?, ?)';
-  db.query(query, [name, score], (err, result) => {
+// Rota para obter as pontuações
+app.get('/pontuacoes', (req, res) => {
+  db.query('SELECT * FROM pontuacoes ORDER BY acertos DESC', (err, results) => {
     if (err) {
-      return res.status(500).send(err);
+      return res.status(500).json({ error: err });
     }
-    res.status(201).send({ id: result.insertId, name, score });
+    res.json(results);
   });
 });
 
-// Inicie o servidor
+// Rota para adicionar ou atualizar pontuações
+app.put('/pontuacoes/:nome', (req, res) => {
+  const { acertos, erros } = req.body;
+  const nome = req.params.nome;
+
+  db.query(
+    'INSERT INTO pontuacoes (nome_jogador, acertos, erros, data_hora) VALUES (?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE acertos = ?, erros = ?',
+    [nome, acertos, erros, acertos, erros],
+    (err, results) => {
+      if (err) {
+        console.error('Erro ao atualizar pontuação:', err); // Log de erro
+        return res.status(500).json({ error: err });
+      }
+      res.json({ message: 'Pontuação atualizada com sucesso!', results });
+    }
+  );
+});
+
+// Iniciar o servidor
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
